@@ -38,16 +38,16 @@ The package uses GitHub Actions to automatically build and publish to PyPI when 
 
 4. **Create Git Tag**
    ```bash
-   git tag -a v0.2.0 -m "Release version 0.2.0"
-   git push origin v0.2.0
+   git tag -a 0.2.0 -m "Release version 0.2.0"
+   git push origin 0.2.0
    ```
 
 5. **Create GitHub Release**
 
    Go to GitHub and create a new release:
    - Click "Releases" → "Draft a new release"
-   - Choose the tag you just created (v0.2.0)
-   - Set release title: "v0.2.0"
+   - Choose the tag you just created (0.2.0)
+   - Set release title: "0.2.0"
    - Add release notes describing changes
    - Click "Publish release"
 
@@ -57,7 +57,6 @@ The package uses GitHub Actions to automatically build and publish to PyPI when 
    - Run all tests
    - Build the package (wheel and sdist)
    - Publish to PyPI
-   - Publish to TestPyPI (optional)
 
 ## Manual Publishing (if needed)
 
@@ -74,12 +73,7 @@ If you need to publish manually:
    twine check dist/*
    ```
 
-3. **Upload to TestPyPI (optional)**
-   ```bash
-   twine upload --repository testpypi dist/*
-   ```
-
-4. **Upload to PyPI**
+3. **Upload to PyPI**
    ```bash
    twine upload dist/*
    ```
@@ -88,19 +82,21 @@ If you need to publish manually:
 
 ### First-time Setup
 
-For the automated GitHub Actions workflow to work, you need to configure PyPI publishing:
+For the automated GitHub Actions workflow to work, you need to configure PyPI Trusted Publishing:
 
 1. **Enable Trusted Publishing on PyPI**
    - Go to https://pypi.org/manage/account/publishing/
-   - Add a new publisher
-   - Set publisher name: `yourusername/aiopulsegrow`
-   - Set workflow name: `publish.yml`
-   - Set environment name: `pypi`
+   - Click "Add a new pending publisher"
+   - Fill in:
+     - **PyPI Project Name**: `aiopulsegrow`
+     - **Owner**: Your GitHub username
+     - **Repository name**: `aiopulsegrow`
+     - **Workflow name**: `publish.yml`
+     - **Environment name**: `pypi`
 
-2. **Configure GitHub Environments**
-   - Go to repository Settings → Environments
-   - Create environment: `pypi`
-   - Create environment: `testpypi` (optional)
+2. **GitHub Environment** (Created automatically)
+   - The `pypi` environment will be created automatically when you first publish
+   - No manual configuration needed in GitHub
 
 ## Versioning
 
