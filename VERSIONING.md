@@ -6,7 +6,7 @@ This project uses **automatic semantic versioning** based on git tags. The versi
 
 We use [setuptools-scm](https://github.com/pypa/setuptools-scm) to automatically determine the version from git tags:
 
-- **With tags**: Version comes from the latest git tag (e.g., `v0.1.0` → `0.1.0`)
+- **With tags**: Version comes from the latest git tag (e.g., `v0.1.0` or `0.1.0` → `0.1.0`)
 - **Without tags**: Fallback to `0.0.0.dev0` during development
 
 ## Creating a Release
@@ -15,8 +15,13 @@ To release a new version:
 
 1. **Create and push a git tag**:
    ```bash
+   # With 'v' prefix (recommended)
    git tag v0.1.0
    git push origin v0.1.0
+
+   # Or without 'v' prefix (also works)
+   git tag 0.1.0
+   git push origin 0.1.0
    ```
 
 2. **Create a GitHub Release**:
@@ -26,12 +31,14 @@ To release a new version:
 
 ## Version Format
 
-Use semantic versioning format: `vX.Y.Z`
+Use semantic versioning format: `X.Y.Z` (optionally with `v` prefix)
 
-- `v0.1.0` - Initial release
-- `v0.2.0` - Minor version with new features
-- `v0.2.1` - Patch version with bug fixes
-- `v1.0.0` - Major release
+- `v0.1.0` or `0.1.0` - Initial release
+- `v0.2.0` or `0.2.0` - Minor version with new features
+- `v0.2.1` or `0.2.1` - Patch version with bug fixes
+- `v1.0.0` or `1.0.0` - Major release
+
+Both formats work - choose whichever you prefer!
 
 ## Development Versions
 
