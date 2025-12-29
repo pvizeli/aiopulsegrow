@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0", "setuptools-scm>=8.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "aiopulsegrow"
-dynamic = ["version"]
+version = "0.1.0"
 description = "Async Python client for Pulsegrow API"
 readme = "README.md"
 authors = [
@@ -83,11 +83,3 @@ warn_return_any = false
 warn_unused_configs = true
 disallow_untyped_defs = true
 
-[[tool.mypy.overrides]]
-module = "aiopulsegrow._version"
-ignore_missing_imports = true
-
-[tool.setuptools_scm]
-write_to = "aiopulsegrow/_version.py"
-version_scheme = "python-simplified-semver"
-local_scheme = "no-local-version"
