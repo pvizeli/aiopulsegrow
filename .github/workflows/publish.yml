@@ -11,6 +11,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for setuptools-scm to determine version from git tags
 
       - name: Set up Python
         uses: actions/setup-python@v5
