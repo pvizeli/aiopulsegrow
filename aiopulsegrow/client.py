@@ -14,13 +14,13 @@ from .exceptions import (
     PulsegrowRateLimitError,
 )
 from .models import (
-    DataPoint,
     Device,
     DeviceData,
     DeviceDataPoint,
     Hub,
     Invitation,
     LightReadingsResponse,
+    SensorDataPoint,
     SensorDetails,
     TimelineEvent,
     TriggeredThreshold,
@@ -190,7 +190,7 @@ class PulsegrowClient:
         device_id: int,
         start: datetime,
         end: datetime | None = None,
-    ) -> list[DataPoint]:
+    ) -> list[DeviceDataPoint]:
         """Get device datapoints within specified timeframe.
 
         Args:
@@ -199,20 +199,20 @@ class PulsegrowClient:
             end: Optional end datetime (ISO 8601)
 
         Returns:
-            List of DataPoint objects
+            List of DeviceDataPoint objects with all sensor readings
         """
         params = {
             "start": start.isoformat(),
             "end": end.isoformat() if end else None,
         }
         data = await self._request("GET", f"/devices/{device_id}/data-range", params)
-        return [DataPoint.from_dict(d) for d in data]
+        return [DeviceDataPoint.from_dict(d) for d in data]
 
     async def get_devices_range(
         self,
         start: datetime,
         end: datetime | None = None,
-    ) -> list[DataPoint]:
+    ) -> list[DeviceDataPoint]:
         """Get all device data within timespan (max 7 days).
 
         Args:
@@ -220,14 +220,14 @@ class PulsegrowClient:
             end: Optional end datetime (ISO 8601)
 
         Returns:
-            List of DataPoint objects for all devices
+            List of DeviceDataPoint objects for all devices with all sensor readings
         """
         params = {
             "start": start.isoformat(),
             "end": end.isoformat() if end else None,
         }
         data = await self._request("GET", "/devices/range", params)
-        return [DataPoint.from_dict(d) for d in data]
+        return [DeviceDataPoint.from_dict(d) for d in data]
 
     # Sensor endpoints
 
@@ -239,36 +239,41 @@ class PulsegrowClient:
         """
         return await self._request("GET", "/sensors/ids")
 
-    async def get_sensor_recent_data(self, sensor_id: int) -> DataPoint:
+    async def get_sensor_recent_data(self, sensor_id: int) -> SensorDataPoint:
         """Get the last data point for a sensor.
 
         Args:
             sensor_id: Sensor identifier
 
         Returns:
-            Most recent DataPoint
+            Most recent SensorDataPoint with parameter values
         """
         data = await self._request("GET", f"/sensors/{sensor_id}/recent-data")
-        return DataPoint.from_dict(data)
+        # API returns MostRecentSensorDataPointDto with dataPointDto nested
+        # Extract the dataPointDto which is the UniversalDataPointDto
+        if "dataPointDto" in data:
+            return SensorDataPoint.from_dict(data["dataPointDto"])
+        # Fallback if API returns UniversalDataPointDto directly
+        return SensorDataPoint.from_dict(data)
 
-    async def force_sensor_read(self, sensor_id: int) -> DataPoint:
+    async def force_sensor_read(self, sensor_id: int) -> SensorDataPoint:
         """Trigger immediate sensor measurement.
 
         Args:
             sensor_id: Sensor identifier
 
         Returns:
-            DataPoint from forced reading
+            SensorDataPoint from forced reading with parameter values
         """
         data = await self._request("GET", f"/sensors/{sensor_id}/force-read")
-        return DataPoint.from_dict(data)
+        return SensorDataPoint.from_dict(data)
 
     async def get_sensor_data_range(
         self,
         sensor_id: int,
         start: datetime,
         end: datetime | None = None,
-    ) -> list[DataPoint]:
+    ) -> list[SensorDataPoint]:
         """Get sensor datapoints within timeframe.
 
         Args:
@@ -277,14 +282,14 @@ class PulsegrowClient:
             end: Optional end datetime (ISO 8601)
 
         Returns:
-            List of DataPoint objects
+            List of SensorDataPoint objects with parameter values
         """
         params = {
             "start": start.isoformat(),
             "end": end.isoformat() if end else None,
         }
         data = await self._request("GET", f"/sensors/{sensor_id}/data-range", params)
-        return [DataPoint.from_dict(d) for d in data]
+        return [SensorDataPoint.from_dict(d) for d in data]
 
     async def get_sensor_details(self, sensor_id: int) -> list[SensorDetails]:
         """Get sensor configuration and thresholds.

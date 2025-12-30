@@ -156,8 +156,50 @@ class DeviceDataPoint:
 
 
 @dataclass
+class SensorDataPointValue:
+    """Represents a single parameter value from a sensor reading."""
+
+    param_name: str | None = None
+    param_value: str | None = None
+    measuring_unit: str | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> SensorDataPointValue:
+        """Create a SensorDataPointValue from API response data."""
+        return cls(
+            param_name=data.get("ParamName"),
+            param_value=data.get("ParamValue"),
+            measuring_unit=data.get("MeasuringUnit"),
+        )
+
+
+@dataclass
+class SensorDataPoint:
+    """Represents a sensor data point (UniversalDataPointDto)."""
+
+    sensor_id: int
+    created_at: datetime | None = None
+    data_point_values: list[SensorDataPointValue] | None = None
+
+    def __post_init__(self) -> None:
+        """Initialize default list if None."""
+        if self.data_point_values is None:
+            self.data_point_values = []
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> SensorDataPoint:
+        """Create a SensorDataPoint from API response data."""
+        values = [SensorDataPointValue.from_dict(v) for v in data.get("dataPointValues", [])]
+        return cls(
+            sensor_id=data.get("sensorId", 0),
+            created_at=_parse_datetime(data.get("createdAt")),
+            data_point_values=values,
+        )
+
+
+@dataclass
 class DataPoint:
-    """Represents a single data point measurement."""
+    """Represents a single data point measurement (legacy/simple format)."""
 
     timestamp: datetime | None = None
     value: float | None = None

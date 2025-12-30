@@ -8,7 +8,6 @@ import pytest
 from aioresponses import aioresponses
 
 from aiopulsegrow import (
-    DataPoint,
     Device,
     DeviceData,
     DeviceDataPoint,
@@ -19,6 +18,7 @@ from aiopulsegrow import (
     PulsegrowConnectionError,
     PulsegrowError,
     PulsegrowRateLimitError,
+    SensorDataPoint,
     SensorDetails,
 )
 
@@ -255,10 +255,18 @@ class TestDeviceEndpoints:
 
     async def test_get_device_data_range(self, client, mock_aioresponse):
         """Test getting device data range."""
-        device_id = 123
+        device_id = 20447
         start = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
         end = datetime(2024, 1, 2, 0, 0, 0, tzinfo=UTC)
-        api_response = [{"timestamp": "2024-01-01T00:00:00Z", "value": 25}]
+        api_response = [
+            {
+                "deviceId": 20447,
+                "temperatureF": 71.5,
+                "humidityRh": 65.0,
+                "co2": 750,
+                "createdAt": "2024-01-01T00:00:00Z",
+            }
+        ]
 
         # Use regex pattern to match URL with query parameters
         mock_aioresponse.get(
@@ -269,14 +277,15 @@ class TestDeviceEndpoints:
         result = await client.get_device_data_range(device_id, start, end)
         assert isinstance(result, list)
         assert len(result) == 1
-        assert isinstance(result[0], DataPoint)
-        assert result[0].value == 25
+        assert isinstance(result[0], DeviceDataPoint)
+        assert result[0].device_id == 20447
+        assert result[0].temperature_f == 71.5
 
     async def test_get_device_data_range_no_end(self, client, mock_aioresponse):
         """Test getting device data range without end date."""
-        device_id = 123
+        device_id = 20447
         start = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
-        api_response = [{"timestamp": "2024-01-01T00:00:00Z", "value": 25}]
+        api_response = [{"deviceId": 20447, "temperatureF": 70.0}]
 
         # Use regex pattern to match URL with query parameters
         mock_aioresponse.get(
@@ -287,13 +296,13 @@ class TestDeviceEndpoints:
         result = await client.get_device_data_range(device_id, start)
         assert isinstance(result, list)
         assert len(result) == 1
-        assert isinstance(result[0], DataPoint)
+        assert isinstance(result[0], DeviceDataPoint)
 
     async def test_get_devices_range(self, client, mock_aioresponse):
         """Test getting all devices data range."""
         start = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
         end = datetime(2024, 1, 2, 0, 0, 0, tzinfo=UTC)
-        api_response = [{"deviceId": 1, "value": 100}]
+        api_response = [{"deviceId": 20447, "temperatureF": 72.0, "co2": 800}]
 
         # Use regex pattern to match URL with query parameters
         mock_aioresponse.get(
@@ -304,8 +313,8 @@ class TestDeviceEndpoints:
         result = await client.get_devices_range(start, end)
         assert isinstance(result, list)
         assert len(result) == 1
-        assert isinstance(result[0], DataPoint)
-        assert result[0].device_id == 1
+        assert isinstance(result[0], DeviceDataPoint)
+        assert result[0].device_id == 20447
 
 
 class TestSensorEndpoints:
@@ -324,35 +333,56 @@ class TestSensorEndpoints:
 
     async def test_get_sensor_recent_data(self, client, mock_aioresponse):
         """Test getting recent sensor data."""
-        sensor_id = 456
-        api_response = {"value": 100, "unit": "lux"}
+        sensor_id = 1638
+        api_response = {
+            "dataPointValues": [{"ParamName": "pH", "ParamValue": "6.2", "MeasuringUnit": ""}],
+            "sensorId": 1638,
+            "createdAt": "2024-01-01T00:00:00Z",
+        }
         mock_aioresponse.get(
             f"{BASE_URL}/sensors/{sensor_id}/recent-data",
             payload=api_response,
         )
 
         result = await client.get_sensor_recent_data(sensor_id)
-        assert isinstance(result, DataPoint)
-        assert result.value == 100
+        assert isinstance(result, SensorDataPoint)
+        assert result.sensor_id == 1638
+        assert len(result.data_point_values) == 1
+        assert result.data_point_values[0].param_name == "pH"
+        assert result.data_point_values[0].param_value == "6.2"
 
     async def test_force_sensor_read(self, client, mock_aioresponse):
         """Test forcing sensor read."""
-        sensor_id = 456
-        api_response = {"value": 105, "timestamp": "2024-01-01T00:00:00Z"}
+        sensor_id = 1696
+        api_response = {
+            "dataPointValues": [
+                {"ParamName": "EC", "ParamValue": "0.85", "MeasuringUnit": "mS/cm"},
+                {"ParamName": "Temperature", "ParamValue": "22.5", "MeasuringUnit": "°C"},
+            ],
+            "sensorId": 1696,
+            "createdAt": "2024-01-01T00:00:00Z",
+        }
         mock_aioresponse.get(
             f"{BASE_URL}/sensors/{sensor_id}/force-read",
             payload=api_response,
         )
 
         result = await client.force_sensor_read(sensor_id)
-        assert isinstance(result, DataPoint)
-        assert result.value == 105
+        assert isinstance(result, SensorDataPoint)
+        assert result.sensor_id == 1696
+        assert len(result.data_point_values) == 2
 
     async def test_get_sensor_data_range(self, client, mock_aioresponse):
         """Test getting sensor data range."""
-        sensor_id = 456
+        sensor_id = 1638
         start = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
-        api_response = [{"value": 100}]
+        api_response = [
+            {
+                "dataPointValues": [{"ParamName": "pH", "ParamValue": "6.0"}],
+                "sensorId": 1638,
+                "createdAt": "2024-01-01T00:00:00Z",
+            }
+        ]
 
         # Use regex pattern to match URL with query parameters
         mock_aioresponse.get(
@@ -361,7 +391,9 @@ class TestSensorEndpoints:
         )
 
         result = await client.get_sensor_data_range(sensor_id, start)
-        assert result is not None
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert isinstance(result[0], SensorDataPoint)
 
     async def test_get_sensor_details(self, client, mock_aioresponse):
         """Test getting sensor details."""
