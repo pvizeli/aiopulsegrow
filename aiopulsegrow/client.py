@@ -17,6 +17,7 @@ from .models import (
     DataPoint,
     Device,
     DeviceData,
+    DeviceDataPoint,
     Hub,
     Invitation,
     LightReadingsResponse,
@@ -172,17 +173,17 @@ class PulsegrowClient:
         data = await self._request("GET", "/devices/details")
         return [Device.from_dict(d) for d in data]
 
-    async def get_device_recent_data(self, device_id: int) -> DataPoint:
+    async def get_device_recent_data(self, device_id: int) -> DeviceDataPoint:
         """Get the last data point for a device.
 
         Args:
             device_id: Device identifier
 
         Returns:
-            Most recent DataPoint
+            Most recent DeviceDataPoint with all sensor readings
         """
         data = await self._request("GET", f"/devices/{device_id}/recent-data")
-        return DataPoint.from_dict(data)
+        return DeviceDataPoint.from_dict(data)
 
     async def get_device_data_range(
         self,

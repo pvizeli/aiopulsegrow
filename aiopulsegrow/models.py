@@ -67,6 +67,95 @@ class Sensor:
 
 
 @dataclass
+class DeviceDataPoint:
+    """Represents a full device data point with all sensor readings."""
+
+    device_id: int
+    device_type: str | None = None
+    created_at: datetime | None = None
+
+    # Power and connectivity
+    plugged_in: bool | None = None
+    battery_v: float | None = None
+    signal_strength: int | None = None
+
+    # Environmental readings
+    temperature_f: float | None = None
+    temperature_c: float | None = None
+    humidity_rh: float | None = None
+    light_lux: float | None = None
+    air_pressure: float | None = None
+    vpd: float | None = None
+    dp_c: float | None = None
+    dp_f: float | None = None
+
+    # Gas sensors
+    co2: int | None = None
+    co2_temperature: float | None = None
+    co2_rh: float | None = None
+    voc: int | None = None
+
+    # Light spectrum channels
+    channel1: float | None = None
+    channel2: float | None = None
+    channel3: float | None = None
+    channel4: float | None = None
+    channel5: float | None = None
+    channel6: float | None = None
+    channel7: float | None = None
+    channel8: float | None = None
+
+    # Additional light measurements
+    near: float | None = None
+    clear: float | None = None
+    flicker: int | None = None
+    par: float | None = None
+    gain: int | None = None
+    tint: float | None = None
+    light_calculation_reading: float | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> DeviceDataPoint:
+        """Create a DeviceDataPoint from API response data."""
+        device_type = data.get("deviceType")
+        return cls(
+            device_id=data.get("deviceId", 0),
+            device_type=str(device_type) if device_type is not None else None,
+            created_at=_parse_datetime(data.get("createdAt")),
+            plugged_in=data.get("pluggedIn"),
+            battery_v=data.get("batteryV"),
+            signal_strength=data.get("signalStrength"),
+            temperature_f=data.get("temperatureF"),
+            temperature_c=data.get("temperatureC"),
+            humidity_rh=data.get("humidityRh"),
+            light_lux=data.get("lightLux"),
+            air_pressure=data.get("airPressure"),
+            vpd=data.get("vpd"),
+            dp_c=data.get("dpC"),
+            dp_f=data.get("dpF"),
+            co2=data.get("co2"),
+            co2_temperature=data.get("co2Temperature"),
+            co2_rh=data.get("co2Rh"),
+            voc=data.get("voc"),
+            channel1=data.get("channel1"),
+            channel2=data.get("channel2"),
+            channel3=data.get("channel3"),
+            channel4=data.get("channel4"),
+            channel5=data.get("channel5"),
+            channel6=data.get("channel6"),
+            channel7=data.get("channel7"),
+            channel8=data.get("channel8"),
+            near=data.get("near"),
+            clear=data.get("clear"),
+            flicker=data.get("flicker"),
+            par=data.get("par"),
+            gain=data.get("gain"),
+            tint=data.get("tint"),
+            light_calculation_reading=data.get("lightCalculationReading"),
+        )
+
+
+@dataclass
 class DataPoint:
     """Represents a single data point measurement."""
 

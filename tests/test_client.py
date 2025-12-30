@@ -11,6 +11,7 @@ from aiopulsegrow import (
     DataPoint,
     Device,
     DeviceData,
+    DeviceDataPoint,
     Hub,
     LightReadingsResponse,
     PulsegrowAuthError,
@@ -224,16 +225,33 @@ class TestDeviceEndpoints:
 
     async def test_get_device_recent_data(self, client, mock_aioresponse):
         """Test getting recent device data."""
-        device_id = 123
-        api_response = {"value": 25.5, "timestamp": "2024-01-01T00:00:00Z"}
+        device_id = 20447
+        api_response = {
+            "deviceId": 20447,
+            "deviceType": 1,
+            "temperatureF": 71.3328,
+            "humidityRh": 64.55934,
+            "lightLux": 95.6835,
+            "airPressure": 94753.5,
+            "vpd": 0.93992567,
+            "co2": 740,
+            "pluggedIn": True,
+            "batteryV": 4.114231,
+            "signalStrength": -50,
+            "createdAt": "2025-12-29T22:02:33",
+        }
         mock_aioresponse.get(
             f"{BASE_URL}/devices/{device_id}/recent-data",
             payload=api_response,
         )
 
         result = await client.get_device_recent_data(device_id)
-        assert isinstance(result, DataPoint)
-        assert result.value == 25.5
+        assert isinstance(result, DeviceDataPoint)
+        assert result.device_id == 20447
+        assert result.temperature_f == 71.3328
+        assert result.humidity_rh == 64.55934
+        assert result.co2 == 740
+        assert result.plugged_in is True
 
     async def test_get_device_data_range(self, client, mock_aioresponse):
         """Test getting device data range."""

@@ -208,6 +208,3 @@ __marimo__/
 
 # Claude
 .claude/
-
-# Test fixtures with real API data
-tests/fixtures/mock_data.py
