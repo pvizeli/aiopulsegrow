@@ -114,11 +114,30 @@ class Device:
 
 @dataclass
 class Sensor:
-    """Represents a sensor within a device."""
+    """Represents a sensor from universalSensorViews."""
 
     id: int
     name: str | None = None
     sensor_type: str | None = None
+    device_type: str | None = None
+    hub_id: int | None = None
+    grow_id: int | None = None
+    display_order: int = 0
+    hidden: bool = False
+
+    # Schedule settings
+    day_start: str | None = None
+    night_start: str | None = None
+
+    # Sensor specific
+    par_sensor_subtype: int | None = None
+    template_id: int | None = None
+
+    # Nested data
+    most_recent_data_point: SensorDataPoint | None = None
+    last_hour_data_point_dtos: dict[str, Any] | None = None
+
+    # Legacy compatibility
     device_id: int | None = None
     unit: str | None = None
 
@@ -126,12 +145,20 @@ class Sensor:
     def from_dict(cls, data: dict[str, Any]) -> Sensor:
         """Create a Sensor from universalSensorViews API response."""
         # Extract sensor ID from nested mostRecentDataPoint
-        sensor_id = data["mostRecentDataPoint"].get("sensorId", 0)
+        sensor_id = data.get("id", 0)
+        if "mostRecentDataPoint" in data and data["mostRecentDataPoint"]:
+            sensor_id = data["mostRecentDataPoint"].get("sensorId", sensor_id)
 
-        # Get sensor type
+        # Get sensor and device types
         sensor_type = data.get("sensorType")
+        device_type = data.get("deviceType")
 
-        # Extract unit from dataPointValues
+        # Parse nested mostRecentDataPoint if present
+        most_recent = None
+        if "mostRecentDataPoint" in data and data["mostRecentDataPoint"]:
+            most_recent = SensorDataPoint.from_dict(data["mostRecentDataPoint"])
+
+        # Extract unit from dataPointValues for legacy compatibility
         unit = None
         dp_values = data.get("mostRecentDataPoint", {}).get("dataPointValues", [])
         if dp_values:
@@ -141,6 +168,18 @@ class Sensor:
             id=sensor_id,
             name=data.get("name"),
             sensor_type=str(sensor_type) if sensor_type is not None else None,
+            device_type=str(device_type) if device_type is not None else None,
+            hub_id=data.get("hubId"),
+            grow_id=data.get("growId"),
+            display_order=data.get("displayOrder", 0),
+            hidden=data.get("hidden", False),
+            day_start=data.get("dayStart"),
+            night_start=data.get("nightStart"),
+            par_sensor_subtype=data.get("parSensorSubtype"),
+            template_id=data.get("templateId"),
+            most_recent_data_point=most_recent,
+            last_hour_data_point_dtos=data.get("lastHourDataPointDtos"),
+            # Legacy compatibility
             device_id=data.get("hubId"),
             unit=unit,
         )
@@ -345,13 +384,15 @@ class SensorDetails:
 
 @dataclass
 class Hub:
-    """Represents a Pulsegrow hub."""
+    """Represents a Pulsegrow hub from HubDetailsDto."""
 
     id: int
     name: str | None = None
-    online: bool = False
-    firmware_version: str | None = None
-    ip_address: str | None = None
+    grow_id: int | None = None
+    mac_address: str | None = None
+    hidden: bool = False
+    hub_thresholds: list[dict[str, Any]] | None = None
+    sensor_devices: list[dict[str, Any]] | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Hub:
@@ -359,9 +400,11 @@ class Hub:
         return cls(
             id=data.get("id", 0),
             name=data.get("name"),
-            online=data.get("online", False),
-            firmware_version=data.get("firmwareVersion"),
-            ip_address=data.get("ipAddress"),
+            grow_id=data.get("growId"),
+            mac_address=data.get("macAddress"),
+            hidden=data.get("hidden", False),
+            hub_thresholds=data.get("hubThresholds"),
+            sensor_devices=data.get("sensorDevices"),
         )
 
 
@@ -408,73 +451,91 @@ class LightReadingsResponse:
 
 @dataclass
 class TimelineEvent:
-    """Represents a timeline event in the grow cycle."""
+    """Represents a timeline event from TimelineEventDto."""
 
     id: int
-    event_type: str | None = None
-    timestamp: datetime | None = None
-    description: str | None = None
-    device_id: int | None = None
+    timeline_event_type: int | None = None
+    title: str | None = None
+    detail: str | None = None
+    display: bool = True
+    grow_id: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TimelineEvent:
         """Create a TimelineEvent from API response data."""
         return cls(
             id=data.get("id", 0),
-            event_type=data.get("eventType") or data.get("type"),
-            timestamp=_parse_datetime(data.get("timestamp")),
-            description=data.get("description"),
-            device_id=data.get("deviceId"),
+            timeline_event_type=data.get("timelineEventType"),
+            title=data.get("title"),
+            detail=data.get("detail"),
+            display=data.get("display", True),
+            grow_id=data.get("growId"),
+            created_at=_parse_datetime(data.get("createdAt")),
+            updated_at=_parse_datetime(data.get("updatedAt")),
         )
 
 
 @dataclass
 class TriggeredThreshold:
-    """Represents a triggered threshold alert."""
+    """Represents a triggered threshold from SortedTriggeredThresholdsDto."""
 
     id: int
-    sensor_id: int | None = None
-    threshold_type: str | None = None
-    threshold_value: float | None = None
-    current_value: float | None = None
-    triggered_at: datetime | None = None
+    device_id: int | None = None
+    device_name: str | None = None
+    low_or_high: bool | None = None
+    low_threshold_value: float | None = None
+    high_threshold_value: float | None = None
+    triggering_value: str | None = None
+    sensor_threshold_type: int | None = None
+    hub_threshold_type: int | None = None
+    threshold_id: int | None = None
+    threshold_type: int | None = None
+    resolved: bool = False
+    created_at: datetime | None = None
     resolved_at: datetime | None = None
-    is_active: bool = True
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TriggeredThreshold:
         """Create a TriggeredThreshold from API response data."""
         return cls(
             id=data.get("id", 0),
-            sensor_id=data.get("sensorId"),
-            threshold_type=data.get("thresholdType") or data.get("type"),
-            threshold_value=data.get("thresholdValue"),
-            current_value=data.get("currentValue") or data.get("value"),
-            triggered_at=_parse_datetime(data.get("triggeredAt")),
+            device_id=data.get("deviceId"),
+            device_name=data.get("deviceName"),
+            low_or_high=data.get("lowOrHigh"),
+            low_threshold_value=data.get("lowThresholdValue"),
+            high_threshold_value=data.get("highThresholdValue"),
+            triggering_value=data.get("triggeringValue"),
+            sensor_threshold_type=data.get("sensorThresholdType"),
+            hub_threshold_type=data.get("hubThresholdType"),
+            threshold_id=data.get("thresholdId"),
+            threshold_type=data.get("thresholdType"),
+            resolved=data.get("resolved", False),
+            created_at=_parse_datetime(data.get("createdAt")),
             resolved_at=_parse_datetime(data.get("resolvedAt")),
-            is_active=data.get("isActive", data.get("resolvedAt") is None),
         )
 
 
 @dataclass
 class UserUsage:
-    """User usage and quota information."""
+    """User information from UserUsageInformation."""
 
     user_id: int
-    email: str | None = None
-    plan_type: str | None = None
-    datapoints_used: int = 0
-    datapoints_limit: int = 0
+    user_email: str | None = None
+    user_name: str | None = None
+    role: str | None = None
+    last_active: datetime | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> UserUsage:
         """Create UserUsage from API response data."""
         return cls(
             user_id=data.get("userId", 0),
-            email=data.get("email"),
-            plan_type=data.get("planType") or data.get("plan"),
-            datapoints_used=data.get("datapointsUsed", 0),
-            datapoints_limit=data.get("datapointsLimit", 0),
+            user_email=data.get("userEmail"),
+            user_name=data.get("userName"),
+            role=data.get("role"),
+            last_active=_parse_datetime(data.get("lastActive")),
         )
 
 

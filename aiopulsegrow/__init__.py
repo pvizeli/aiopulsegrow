@@ -26,7 +26,7 @@ from .models import (
     UserUsage,
 )
 
-__version__ = "25.12.3"
+__version__ = "25.12.4"
 
 __all__ = [
     # Client

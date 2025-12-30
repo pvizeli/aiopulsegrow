@@ -58,7 +58,13 @@ class TestRealFixtures:
         assert isinstance(hub, Hub)
         assert hub.id == 402
         assert hub.name is not None
-        assert isinstance(hub.online, bool)
+        assert hub.grow_id == 17513
+        assert hub.mac_address == "0c2a6914e40e"
+        assert hub.hidden is False
+        assert hub.hub_thresholds is not None
+        assert isinstance(hub.hub_thresholds, list)
+        assert hub.sensor_devices is not None
+        assert isinstance(hub.sensor_devices, list)
 
     def test_device_with_real_data(self):
         """Test that Device model handles real API deviceViewDto structure."""
