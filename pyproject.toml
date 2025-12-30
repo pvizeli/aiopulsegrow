@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aiopulsegrow"
-version = "25.12.3"
+version = "25.12.4"
 description = "Async Python client for Pulsegrow API"
 readme = "README.md"
 authors = [
