@@ -69,6 +69,26 @@ class TestRealFixtures:
         assert device.name == "PulsePro"
         assert device.device_type == "1"  # Converted to string from API int
 
+        # Test nested mostRecentDataPoint
+        assert device.most_recent_data_point is not None
+        assert device.most_recent_data_point.device_id == 20447
+        assert device.most_recent_data_point.temperature_f == 71.3328
+        assert device.most_recent_data_point.co2 == 740
+
+        # Test nested proLightReadingPreviewDto
+        assert device.pro_light_reading_preview is not None
+        assert device.pro_light_reading_preview.id == 433646
+        assert device.pro_light_reading_preview.ppfd == 264.6240184513413
+        assert device.pro_light_reading_preview.dli == 11.43
+
+        # Test other device fields
+        assert device.grow_id == 17513
+        assert device.day_start == "08:00:00"
+        assert device.night_start == "20:00:00"
+        assert device.is_day is False
+        assert device.battery_count == 1
+        assert device.low_battery_voltage == 3.7
+
     def test_sensor_with_real_data(self):
         """Test that Sensor model handles real API universalSensorViews structure."""
         sensor_view = ALL_DEVICES["universalSensorViews"][0]

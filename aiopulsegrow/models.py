@@ -8,24 +8,104 @@ from typing import Any
 
 
 @dataclass
+class ProLightReadingPreview:
+    """Preview of professional light reading data."""
+
+    id: int
+    ppfd: float | None = None
+    dli: float | None = None
+    created_at: datetime | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ProLightReadingPreview:
+        """Create a ProLightReadingPreview from API response data."""
+        return cls(
+            id=data.get("id", 0),
+            ppfd=data.get("ppfd"),
+            dli=data.get("dli"),
+            created_at=_parse_datetime(data.get("createdAt")),
+        )
+
+
+@dataclass
 class Device:
-    """Represents a Pulsegrow device."""
+    """Represents a Pulsegrow device from DeviceViewDto."""
 
     id: int
     name: str | None = None
     device_type: str | None = None
+    grow_id: int | None = None
+    guid: str | None = None
+    pulse_guid: str | None = None
+    display_order: int = 0
+    hidden: bool = False
+
+    # Schedule settings
+    day_start: str | None = None
+    night_start: str | None = None
+    is_day: bool | None = None
+
+    # VPD settings
+    vpd_leaf_temp_offset_in_f: int | None = None
+    vpd_target: float | None = None
+
+    # Battery settings
+    battery_count: int | None = None
+    low_battery_voltage: float | None = None
+
+    # Timezone
+    grow_timezone_offset: int | None = None
+
+    # Template
+    template_id: int | None = None
+
+    # Nested data
+    most_recent_data_point: DeviceDataPoint | None = None
+    pro_light_reading_preview: ProLightReadingPreview | None = None
+
+    # Legacy fields for compatibility
     hub_id: int | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Device:
-        """Create a Device from API response data."""
+        """Create a Device from API response data (DeviceViewDto or DeviceDetailsDto)."""
         device_type = data.get("deviceType")
+
+        # Parse nested mostRecentDataPoint if present
+        most_recent = None
+        if "mostRecentDataPoint" in data and data["mostRecentDataPoint"]:
+            most_recent = DeviceDataPoint.from_dict(data["mostRecentDataPoint"])
+
+        # Parse nested proLightReadingPreviewDto if present
+        light_preview = None
+        if "proLightReadingPreviewDto" in data and data["proLightReadingPreviewDto"]:
+            light_preview = ProLightReadingPreview.from_dict(
+                data["proLightReadingPreviewDto"]
+            )
+
         return cls(
             id=data.get("id", 0),
             name=data.get("name"),
             device_type=str(device_type) if device_type is not None else None,
+            grow_id=data.get("growId"),
+            guid=data.get("guid"),
+            pulse_guid=data.get("pulseGuid"),
+            display_order=data.get("displayOrder", 0),
+            hidden=data.get("hidden", False),
+            day_start=data.get("dayStart"),
+            night_start=data.get("nightStart"),
+            is_day=data.get("isDay"),
+            vpd_leaf_temp_offset_in_f=data.get("vpdLeafTempOffsetInF"),
+            vpd_target=data.get("vpdTarget"),
+            battery_count=data.get("batteryCount"),
+            low_battery_voltage=data.get("lowBatteryVoltage"),
+            grow_timezone_offset=data.get("growTimezoneOffset"),
+            template_id=data.get("templateId"),
+            most_recent_data_point=most_recent,
+            pro_light_reading_preview=light_preview,
+            # Legacy fields
             hub_id=data.get("hubId"),
             created_at=_parse_datetime(data.get("createdAt")),
             updated_at=_parse_datetime(data.get("updatedAt")),
