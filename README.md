@@ -58,6 +58,38 @@ await client.close()
 await session.close()
 ```
 
+## Enumerations
+
+The library provides helpful enumerations for working with device types, sensor types, events, and thresholds:
+
+```python
+from aiopulsegrow import DeviceType, SensorType, TimelineEventType
+
+# Check device type
+if device.device_type == DeviceType.PULSE_PRO:
+    print("This is a PulsePro device with advanced light sensors")
+
+# Check sensor type
+if sensor.sensor_type == SensorType.PH10:
+    print("This is a pH sensor")
+
+# Check event type
+if event.timeline_event_type == TimelineEventType.SENSOR_CALIBRATED:
+    print("Sensor was calibrated")
+```
+
+Available enums:
+- `DeviceType` - Device types (PULSE_ONE, PULSE_PRO, PULSE_HUB, SENSOR, CONTROL, PULSE_ZERO)
+- `SensorType` - Sensor models (PH10, EC1, PAR1, VWC1, VWC2, VWC3, etc.)
+- `TimelineEventType` - Event types (NOTE, NOTIFICATION, FEEDING, SENSOR_CALIBRATED, etc.)
+- `ThresholdType` - Device threshold types (LIGHT, TEMPERATURE, HUMIDITY, VPD, etc.)
+- `SensorThresholdType` - Sensor threshold types (PH, EC1_EC, PAR1_PPFD, etc.)
+- `HubThresholdType` - Hub threshold types (POWER, CONNECTIVITY)
+- `ParSensorSubtype` - PAR sensor models (SQ522, SQ618)
+- `UserGrowRole` - User roles (OWNER, ADMIN, EDITOR, VIEWER)
+
+All enums are sourced from the official Pulsegrow API specification.
+
 ## API Methods
 
 ### Devices

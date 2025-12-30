@@ -54,7 +54,7 @@ async def fetch_all_data(api_key: str) -> dict:
         status, result = await _safe_get(session, f"{base_url}/all-devices")
         if status == 200 and result:
             data["all_devices"] = result
-            print(f"    ✓ Got {len(data['all_devices'].get('devices', []))} devices")
+            print(f"    ✓ Got {len(data['all_devices'].get('deviceViewDtos', []))} devices")
         else:
             print(f"    ✗ Failed: {status}")
 
@@ -68,8 +68,8 @@ async def fetch_all_data(api_key: str) -> dict:
             print(f"    ✗ Failed: {status}")
 
         # If we have devices, fetch device-specific data
-        if "all_devices" in data and data["all_devices"].get("devices"):
-            device_id = data["all_devices"]["devices"][0]["id"]
+        if "all_devices" in data and data["all_devices"].get("deviceViewDtos"):
+            device_id = data["all_devices"]["deviceViewDtos"][0]["id"]
             print(f"\n  Using device ID {device_id} for detailed queries...")
 
             # Recent data
@@ -95,8 +95,8 @@ async def fetch_all_data(api_key: str) -> dict:
                 print(f"    ✗ Failed: {status}")
 
         # If we have sensors, fetch sensor-specific data
-        if "all_devices" in data and data["all_devices"].get("sensors"):
-            sensor_id = data["all_devices"]["sensors"][0]["id"]
+        if "all_devices" in data and data["all_devices"].get("universalSensorViews"):
+            sensor_id = data["all_devices"]["universalSensorViews"][0]["id"]
             print(f"\n  Using sensor ID {sensor_id} for detailed queries...")
 
             # Sensor details
@@ -153,9 +153,10 @@ async def fetch_all_data(api_key: str) -> dict:
             print(f"    ✗ Failed: {status}")
 
         # Light readings (if available)
-        if "all_devices" in data and data["all_devices"].get("devices"):
-            for device in data["all_devices"]["devices"]:
-                if device.get("type") == "pro" or device.get("deviceType") == "pro":
+        if "all_devices" in data and data["all_devices"].get("deviceViewDtos"):
+            for device in data["all_devices"]["deviceViewDtos"]:
+                # Check if this is a Pro device (has proLightReadingPreviewDto or deviceType == 1)
+                if "proLightReadingPreviewDto" in device or device.get("deviceType") == 1:
                     device_id = device["id"]
                     print(f"\n  Found Pro device {device_id}, fetching light readings...")
                     status, result = await _safe_get(

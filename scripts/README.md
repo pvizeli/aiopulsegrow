@@ -46,6 +46,8 @@ If you get a `401 Unauthorized` error, check that:
 
 If you get `404 Not Found` errors, that's normal for endpoints that don't have data yet (like timeline events or triggered thresholds on a new account).
 
+**Note about Light Readings**: The current mock data doesn't include light readings. To generate mock data with light readings, you need to run the script with an API key that has access to a PulsePro device (deviceType == 1 or devices with `proLightReadingPreviewDto`). The script will automatically detect Pro devices and fetch their light readings.
+
 ### Security Note
 
 ⚠️ **Important**: Use a test/development API key for this script. Never commit the generated `mock_data.py` file if it contains sensitive information. The `.gitignore` is configured to exclude `tests/fixtures/mock_data.py` by default.
