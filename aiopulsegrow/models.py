@@ -81,9 +81,7 @@ class Device:
         # Parse nested proLightReadingPreviewDto if present
         light_preview = None
         if "proLightReadingPreviewDto" in data and data["proLightReadingPreviewDto"]:
-            light_preview = ProLightReadingPreview.from_dict(
-                data["proLightReadingPreviewDto"]
-            )
+            light_preview = ProLightReadingPreview.from_dict(data["proLightReadingPreviewDto"])
 
         return cls(
             id=data.get("id", 0),
