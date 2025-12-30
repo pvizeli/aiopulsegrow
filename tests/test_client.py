@@ -335,9 +335,11 @@ class TestSensorEndpoints:
         """Test getting recent sensor data."""
         sensor_id = 1638
         api_response = {
-            "dataPointValues": [{"ParamName": "pH", "ParamValue": "6.2", "MeasuringUnit": ""}],
-            "sensorId": 1638,
-            "createdAt": "2024-01-01T00:00:00Z",
+            "dataPointDto": {
+                "dataPointValues": [{"ParamName": "pH", "ParamValue": "6.2", "MeasuringUnit": ""}],
+                "sensorId": 1638,
+                "createdAt": "2024-01-01T00:00:00Z",
+            }
         }
         mock_aioresponse.get(
             f"{BASE_URL}/sensors/{sensor_id}/recent-data",
@@ -486,7 +488,7 @@ class TestTimelineAndThresholdEndpoints:
 
     async def test_get_timeline_default(self, client, mock_aioresponse):
         """Test getting timeline with default parameters."""
-        api_response = {"events": []}
+        api_response = []
         mock_aioresponse.get(
             f"{BASE_URL}/api/timeline",
             payload=api_response,
@@ -498,7 +500,7 @@ class TestTimelineAndThresholdEndpoints:
     async def test_get_timeline_with_params(self, client, mock_aioresponse):
         """Test getting timeline with parameters."""
         start_date = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
-        api_response = {"events": [{"type": "watering", "id": 1}]}
+        api_response = [{"type": "watering", "id": 1}]
 
         # Use regex pattern to match URL with query parameters
         mock_aioresponse.get(

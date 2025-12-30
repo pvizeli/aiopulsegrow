@@ -1,7 +1,6 @@
 """Tests for data models."""
 
 from aiopulsegrow.models import (
-    DataPoint,
     Device,
     DeviceData,
 )
@@ -17,22 +16,6 @@ class TestDevice:
         assert device.id == 1
         assert device.name == "Test Device"
         assert device.device_type == "pro"
-
-
-class TestDataPoint:
-    """Test DataPoint model."""
-
-    def test_from_dict(self):
-        """Test creating DataPoint from dict."""
-        data = {
-            "timestamp": "2024-01-01T00:00:00Z",
-            "value": 25.5,
-            "deviceId": 1,
-        }
-        point = DataPoint.from_dict(data)
-        assert point.value == 25.5
-        assert point.device_id == 1
-        assert point.timestamp is not None
 
 
 class TestDeviceData:

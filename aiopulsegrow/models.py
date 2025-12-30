@@ -63,11 +63,6 @@ class Device:
     most_recent_data_point: DeviceDataPoint | None = None
     pro_light_reading_preview: ProLightReadingPreview | None = None
 
-    # Legacy fields for compatibility
-    hub_id: int | None = None
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
-
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Device:
         """Create a Device from API response data (DeviceViewDto or DeviceDetailsDto)."""
@@ -103,10 +98,6 @@ class Device:
             template_id=data.get("templateId"),
             most_recent_data_point=most_recent,
             pro_light_reading_preview=light_preview,
-            # Legacy fields
-            hub_id=data.get("hubId"),
-            created_at=_parse_datetime(data.get("createdAt")),
-            updated_at=_parse_datetime(data.get("updatedAt")),
         )
 
 
@@ -135,10 +126,6 @@ class Sensor:
     most_recent_data_point: SensorDataPoint | None = None
     last_hour_data_point_dtos: dict[str, Any] | None = None
 
-    # Legacy compatibility
-    device_id: int | None = None
-    unit: str | None = None
-
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Sensor:
         """Create a Sensor from universalSensorViews API response."""
@@ -156,12 +143,6 @@ class Sensor:
         if "mostRecentDataPoint" in data and data["mostRecentDataPoint"]:
             most_recent = SensorDataPoint.from_dict(data["mostRecentDataPoint"])
 
-        # Extract unit from dataPointValues for legacy compatibility
-        unit = None
-        dp_values = data.get("mostRecentDataPoint", {}).get("dataPointValues", [])
-        if dp_values:
-            unit = dp_values[0].get("MeasuringUnit") or None
-
         return cls(
             id=sensor_id,
             name=data.get("name"),
@@ -177,9 +158,6 @@ class Sensor:
             template_id=data.get("templateId"),
             most_recent_data_point=most_recent,
             last_hour_data_point_dtos=data.get("lastHourDataPointDtos"),
-            # Legacy compatibility
-            device_id=data.get("hubId"),
-            unit=unit,
         )
 
 
@@ -315,28 +293,6 @@ class SensorDataPoint:
 
 
 @dataclass
-class DataPoint:
-    """Represents a single data point measurement (legacy/simple format)."""
-
-    timestamp: datetime | None = None
-    value: float | None = None
-    device_id: int | None = None
-    sensor_id: int | None = None
-    unit: str | None = None
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> DataPoint:
-        """Create a DataPoint from API response data."""
-        return cls(
-            timestamp=_parse_datetime(data.get("timestamp") or data.get("time")),
-            value=data.get("value"),
-            device_id=data.get("deviceId"),
-            sensor_id=data.get("sensorId"),
-            unit=data.get("unit"),
-        )
-
-
-@dataclass
 class DeviceData:
     """Container for all devices and sensors."""
 
@@ -371,7 +327,7 @@ class SensorDetails:
         return cls(
             id=data.get("id", 0),
             name=data.get("name"),
-            sensor_type=data.get("sensorType") or data.get("type"),
+            sensor_type=data.get("sensorType"),
             device_id=data.get("deviceId"),
             unit=data.get("unit"),
             min_threshold=data.get("minThreshold"),

@@ -250,11 +250,7 @@ class PulsegrowClient:
         """
         data = await self._request("GET", f"/sensors/{sensor_id}/recent-data")
         # API returns MostRecentSensorDataPointDto with dataPointDto nested
-        # Extract the dataPointDto which is the UniversalDataPointDto
-        if "dataPointDto" in data:
-            return SensorDataPoint.from_dict(data["dataPointDto"])
-        # Fallback if API returns UniversalDataPointDto directly
-        return SensorDataPoint.from_dict(data)
+        return SensorDataPoint.from_dict(data["dataPointDto"])
 
     async def force_sensor_read(self, sensor_id: int) -> SensorDataPoint:
         """Trigger immediate sensor measurement.
@@ -394,9 +390,7 @@ class PulsegrowClient:
                 params["eventTypes"].append(event_type)
 
         data = await self._request("GET", "/api/timeline", params)
-        # Handle both dict with events key or direct list
-        events = data.get("events", []) if isinstance(data, dict) else data
-        return [TimelineEvent.from_dict(e) for e in events]
+        return [TimelineEvent.from_dict(e) for e in data]
 
     async def get_triggered_thresholds(self) -> list[TriggeredThreshold]:
         """Get active and resolved threshold violations.

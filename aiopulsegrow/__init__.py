@@ -18,7 +18,6 @@ from .exceptions import (
     PulsegrowRateLimitError,
 )
 from .models import (
-    DataPoint,
     Device,
     DeviceData,
     DeviceDataPoint,
@@ -36,7 +35,7 @@ from .models import (
     UserUsage,
 )
 
-__version__ = "25.12.4"
+__version__ = "25.12.5"
 
 __all__ = [
     # Client
@@ -56,7 +55,6 @@ __all__ = [
     "PulsegrowConnectionError",
     "PulsegrowRateLimitError",
     # Models
-    "DataPoint",
     "Device",
     "DeviceData",
     "DeviceDataPoint",

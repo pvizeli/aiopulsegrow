@@ -72,7 +72,7 @@ class TestRealFixtures:
         assert isinstance(first_sensor, Sensor)
         assert first_sensor.id == 1638  # From mostRecentDataPoint.sensorId
         assert first_sensor.sensor_type == "3"
-        assert first_sensor.device_id == 402  # From hubId
+        assert first_sensor.hub_id == 402
 
     def test_hub_ids_parsing(self):
         """Test parsing real /hubs/ids response."""
@@ -131,11 +131,8 @@ class TestRealFixtures:
 
         assert sensor.id == 1638  # From nested mostRecentDataPoint
         assert sensor.sensor_type == "3"
-        assert sensor.device_id == 402  # hubId
-        # Unit is None when empty string is converted
-        assert sensor.unit is None or sensor.unit == ""
 
-        # Test all new sensor fields
+        # Test all sensor fields
         assert sensor.hub_id == 402
         assert sensor.grow_id == 17513
         assert sensor.device_type == "3"
