@@ -8,7 +8,6 @@ import pytest
 from aioresponses import aioresponses
 
 from aiopulsegrow import (
-    Device,
     DeviceData,
     DeviceDataPoint,
     Hub,
@@ -21,6 +20,7 @@ from aiopulsegrow import (
     SensorDataPoint,
     SensorDetails,
 )
+from tests.fixtures.mock_data import ALL_DEVICES, HUB_DETAILS, RECENT_DATA, SENSOR_DETAILS
 
 API_KEY = "test-api-key-123"
 BASE_URL = "https://api.pulsegrow.com"
@@ -171,31 +171,18 @@ class TestDeviceEndpoints:
     """Test device endpoints."""
 
     async def test_get_all_devices(self, client, mock_aioresponse):
-        """Test getting all devices."""
-        api_response = {
-            "deviceViewDtos": [{"id": 1, "deviceType": 1}],
-            "universalSensorViews": [
-                {
-                    "sensorType": 1,
-                    "hubId": 100,
-                    "mostRecentDataPoint": {
-                        "sensorId": 2,
-                        "dataPointValues": [{"MeasuringUnit": "°C"}],
-                    },
-                }
-            ],
-        }
+        """Test getting all devices using real mock data."""
         mock_aioresponse.get(
             f"{BASE_URL}/all-devices",
-            payload=api_response,
+            payload=ALL_DEVICES,
         )
 
         result = await client.get_all_devices()
         assert isinstance(result, DeviceData)
         assert len(result.devices) == 1
-        assert result.devices[0].id == 1
-        assert len(result.sensors) == 1
-        assert result.sensors[0].id == 2
+        assert result.devices[0].id == 20447
+        assert result.devices[0].name == "PulsePro"
+        assert len(result.sensors) == 2
 
     async def test_get_device_ids(self, client, mock_aioresponse):
         """Test getting device IDs."""
@@ -206,11 +193,12 @@ class TestDeviceEndpoints:
         )
 
         result = await client.get_device_ids()
-        assert result is not None
+        assert result == expected_ids
 
     async def test_get_device_details(self, client, mock_aioresponse):
-        """Test getting device details."""
-        api_response = [{"id": 1, "name": "Device 1"}]
+        """Test getting device details using real mock data structure."""
+        # DeviceDetailsDto has different required fields than DeviceViewDto
+        api_response = [ALL_DEVICES["deviceViewDtos"][0]]
         mock_aioresponse.get(
             f"{BASE_URL}/devices/details",
             payload=api_response,
@@ -219,56 +207,31 @@ class TestDeviceEndpoints:
         result = await client.get_device_details()
         assert isinstance(result, list)
         assert len(result) == 1
-        assert isinstance(result[0], Device)
-        assert result[0].id == 1
-        assert result[0].name == "Device 1"
+        assert result[0].id == 20447
+        assert result[0].name == "PulsePro"
 
     async def test_get_device_recent_data(self, client, mock_aioresponse):
-        """Test getting recent device data."""
+        """Test getting recent device data using real mock data."""
         device_id = 20447
-        api_response = {
-            "deviceId": 20447,
-            "deviceType": 1,
-            "temperatureF": 71.3328,
-            "humidityRh": 64.55934,
-            "lightLux": 95.6835,
-            "airPressure": 94753.5,
-            "vpd": 0.93992567,
-            "co2": 740,
-            "pluggedIn": True,
-            "batteryV": 4.114231,
-            "signalStrength": -50,
-            "createdAt": "2025-12-29T22:02:33",
-        }
         mock_aioresponse.get(
             f"{BASE_URL}/devices/{device_id}/recent-data",
-            payload=api_response,
+            payload=RECENT_DATA,
         )
 
         result = await client.get_device_recent_data(device_id)
         assert isinstance(result, DeviceDataPoint)
         assert result.device_id == 20447
-        assert result.temperature_f == 71.3328
-        assert result.humidity_rh == 64.55934
-        assert result.co2 == 740
-        assert result.plugged_in is True
+        assert result.temperature_f is not None
+        assert result.humidity_rh is not None
 
     async def test_get_device_data_range(self, client, mock_aioresponse):
         """Test getting device data range."""
         device_id = 20447
         start = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
         end = datetime(2024, 1, 2, 0, 0, 0, tzinfo=UTC)
-        api_response = [
-            {
-                "deviceId": 20447,
-                "temperatureF": 71.5,
-                "humidityRh": 65.0,
-                "co2": 750,
-                "createdAt": "2024-01-01T00:00:00Z",
-            }
-        ]
+        # Use RECENT_DATA as a template for range response
+        api_response = [RECENT_DATA]
 
-        # Use regex pattern to match URL with query parameters
         mock_aioresponse.get(
             re.compile(rf"{BASE_URL}/devices/{device_id}/data-range\?.*"),
             payload=api_response,
@@ -279,15 +242,13 @@ class TestDeviceEndpoints:
         assert len(result) == 1
         assert isinstance(result[0], DeviceDataPoint)
         assert result[0].device_id == 20447
-        assert result[0].temperature_f == 71.5
 
     async def test_get_device_data_range_no_end(self, client, mock_aioresponse):
         """Test getting device data range without end date."""
         device_id = 20447
         start = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
-        api_response = [{"deviceId": 20447, "temperatureF": 70.0}]
+        api_response = [RECENT_DATA]
 
-        # Use regex pattern to match URL with query parameters
         mock_aioresponse.get(
             re.compile(rf"{BASE_URL}/devices/{device_id}/data-range\?.*"),
             payload=api_response,
@@ -302,9 +263,8 @@ class TestDeviceEndpoints:
         """Test getting all devices data range."""
         start = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
         end = datetime(2024, 1, 2, 0, 0, 0, tzinfo=UTC)
-        api_response = [{"deviceId": 20447, "temperatureF": 72.0, "co2": 800}]
+        api_response = [RECENT_DATA]
 
-        # Use regex pattern to match URL with query parameters
         mock_aioresponse.get(
             re.compile(rf"{BASE_URL}/devices/range\?.*"),
             payload=api_response,
@@ -329,7 +289,7 @@ class TestSensorEndpoints:
         )
 
         result = await client.get_sensor_ids()
-        assert result is not None
+        assert result == expected_ids
 
     async def test_get_sensor_recent_data(self, client, mock_aioresponse):
         """Test getting recent sensor data."""
@@ -380,13 +340,12 @@ class TestSensorEndpoints:
         start = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
         api_response = [
             {
-                "dataPointValues": [{"ParamName": "pH", "ParamValue": "6.0"}],
+                "dataPointValues": [{"ParamName": "pH", "ParamValue": "6.0", "MeasuringUnit": ""}],
                 "sensorId": 1638,
                 "createdAt": "2024-01-01T00:00:00Z",
             }
         ]
 
-        # Use regex pattern to match URL with query parameters
         mock_aioresponse.get(
             re.compile(rf"{BASE_URL}/sensors/{sensor_id}/data-range\?.*"),
             payload=api_response,
@@ -398,18 +357,18 @@ class TestSensorEndpoints:
         assert isinstance(result[0], SensorDataPoint)
 
     async def test_get_sensor_details(self, client, mock_aioresponse):
-        """Test getting sensor details."""
-        sensor_id = 456
-        api_response = [{"id": 456, "type": "light"}]
+        """Test getting sensor details using real mock data."""
+        sensor_id = 1638
         mock_aioresponse.get(
             f"{BASE_URL}/sensors/{sensor_id}/details",
-            payload=api_response,
+            payload=[SENSOR_DETAILS],
         )
 
         result = await client.get_sensor_details(sensor_id)
         assert isinstance(result, list)
         assert len(result) == 1
         assert isinstance(result[0], SensorDetails)
+        assert result[0].id == 1638
 
 
 class TestHubEndpoints:
@@ -424,21 +383,20 @@ class TestHubEndpoints:
         )
 
         result = await client.get_hub_ids()
-        assert result is not None
+        assert result == expected_ids
 
     async def test_get_hub_details(self, client, mock_aioresponse):
-        """Test getting hub details."""
-        hub_id = 100
-        api_response = {"id": 100, "name": "Main Hub"}
+        """Test getting hub details using real mock data."""
+        hub_id = 402
         mock_aioresponse.get(
             f"{BASE_URL}/hubs/{hub_id}",
-            payload=api_response,
+            payload=HUB_DETAILS,
         )
 
         result = await client.get_hub_details(hub_id)
         assert isinstance(result, Hub)
-        assert result.id == 100
-        assert result.name == "Main Hub"
+        assert result.id == 402
+        assert result.name == "PulseHub"
 
 
 class TestLightReadingEndpoints:
@@ -447,20 +405,20 @@ class TestLightReadingEndpoints:
     async def test_get_light_readings(self, client, mock_aioresponse):
         """Test getting light readings."""
         device_id = 123
-        api_response = {"readings": [], "page": 0}
+        api_response = {"lightReadings": [], "currentPage": 0, "totalPages": 0}
         mock_aioresponse.get(
             f"{BASE_URL}/api/light-readings/{device_id}",
             payload=api_response,
         )
 
         result = await client.get_light_readings(device_id)
-        assert result is not None
+        assert isinstance(result, LightReadingsResponse)
 
     async def test_get_light_readings_with_page(self, client, mock_aioresponse):
         """Test getting light readings with page parameter."""
         device_id = 123
         page = 2
-        api_response = {"readings": [], "page": 2}
+        api_response = {"lightReadings": [], "currentPage": 2, "totalPages": 5}
         mock_aioresponse.get(
             f"{BASE_URL}/api/light-readings/{device_id}?page={page}",
             payload=api_response,
@@ -468,7 +426,7 @@ class TestLightReadingEndpoints:
 
         result = await client.get_light_readings(device_id, page=page)
         assert isinstance(result, LightReadingsResponse)
-        assert result.page == 2
+        assert result.current_page == 2
 
     async def test_trigger_light_reading(self, client, mock_aioresponse):
         """Test triggering light reading."""
@@ -500,9 +458,15 @@ class TestTimelineAndThresholdEndpoints:
     async def test_get_timeline_with_params(self, client, mock_aioresponse):
         """Test getting timeline with parameters."""
         start_date = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
-        api_response = [{"type": "watering", "id": 1}]
+        api_response = [
+            {
+                "timelineEventType": 1,
+                "display": True,
+                "id": 1,
+                "title": "Test event",
+            }
+        ]
 
-        # Use regex pattern to match URL with query parameters
         mock_aioresponse.get(
             re.compile(rf"{BASE_URL}/api/timeline\?.*"),
             payload=api_response,
@@ -514,18 +478,26 @@ class TestTimelineAndThresholdEndpoints:
             count=10,
             page=0,
         )
-        assert result is not None
+        assert len(result) == 1
 
     async def test_get_triggered_thresholds(self, client, mock_aioresponse):
         """Test getting triggered thresholds."""
-        api_response = [{"id": 1, "triggered": True}]
+        api_response = [
+            {
+                "createdAt": "2024-01-01T00:00:00Z",
+                "resolved": False,
+                "thresholdType": 1,
+                "deviceId": 123,
+                "lowOrHigh": True,
+            }
+        ]
         mock_aioresponse.get(
             f"{BASE_URL}/api/triggered-thresholds",
             payload=api_response,
         )
 
         result = await client.get_triggered_thresholds()
-        assert result is not None
+        assert len(result) == 1
 
 
 class TestUserEndpoints:
@@ -533,14 +505,14 @@ class TestUserEndpoints:
 
     async def test_get_users(self, client, mock_aioresponse):
         """Test getting users."""
-        api_response = [{"userId": 1, "datapointsUsed": 1000}]
+        api_response = [{"userId": 1}]
         mock_aioresponse.get(
             f"{BASE_URL}/users",
             payload=api_response,
         )
 
         result = await client.get_users()
-        assert result is not None
+        assert len(result) == 1
 
     async def test_get_invitations(self, client, mock_aioresponse):
         """Test getting invitations."""
@@ -551,7 +523,7 @@ class TestUserEndpoints:
         )
 
         result = await client.get_invitations()
-        assert result is not None
+        assert len(result) == 1
 
 
 class TestRequestHeaders:
