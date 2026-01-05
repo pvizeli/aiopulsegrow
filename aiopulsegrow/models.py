@@ -1,63 +1,69 @@
-"""Data models for Pulsegrow API responses."""
+"""Data models for Pulsegrow API responses.
+
+Field requirements are based on the official Pulsegrow OpenAPI specification.
+Required fields will raise KeyError if missing from API response.
+Optional fields default to None or appropriate zero values.
+"""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
 
 @dataclass
 class ProLightReadingPreview:
-    """Preview of professional light reading data."""
+    """Preview of professional light reading data (ProLightReadingPreviewDto)."""
 
     id: int
-    ppfd: float | None = None
-    dli: float | None = None
-    created_at: datetime | None = None
+    ppfd: float
+    dli: float
+    created_at: datetime
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ProLightReadingPreview:
         """Create a ProLightReadingPreview from API response data."""
+        created_at = _parse_datetime(data.get("createdAt"))
+        if created_at is None:
+            raise ValueError("createdAt is required for ProLightReadingPreview")
         return cls(
-            id=data.get("id", 0),
-            ppfd=data.get("ppfd"),
-            dli=data.get("dli"),
-            created_at=_parse_datetime(data.get("createdAt")),
+            id=data["id"],
+            ppfd=data["ppfd"],
+            dli=data["dli"],
+            created_at=created_at,
         )
 
 
 @dataclass
 class Device:
-    """Represents a Pulsegrow device from DeviceViewDto."""
+    """Represents a Pulsegrow device (DeviceViewDto).
 
+    Based on OpenAPI spec, required fields are:
+    id, growId, hidden, deviceType, guid, pulseGuid, isDay, vpdLeafTempOffsetInF,
+    batteryCount, lowBatteryVoltage, mostRecentDataPoint, growTimezoneOffset
+    """
+
+    # Required fields per OpenAPI spec
     id: int
-    name: str | None = None
-    device_type: str | None = None
-    grow_id: int | None = None
-    guid: str | None = None
-    pulse_guid: str | None = None
-    display_order: int = 0
-    hidden: bool = False
+    grow_id: int
+    hidden: bool
+    device_type: int
+    guid: str
+    pulse_guid: str
+    is_day: bool
+    vpd_leaf_temp_offset_in_f: float
+    battery_count: int
+    low_battery_voltage: float
+    grow_timezone_offset: int
 
-    # Schedule settings
+    # Optional fields per OpenAPI spec
+    display_order: int = 0
+    name: str | None = None
+    template_id: int | None = None
+    vpd_target: float | None = None
     day_start: str | None = None
     night_start: str | None = None
-    is_day: bool | None = None
-
-    # VPD settings
-    vpd_leaf_temp_offset_in_f: int | None = None
-    vpd_target: float | None = None
-
-    # Battery settings
-    battery_count: int | None = None
-    low_battery_voltage: float | None = None
-
-    # Timezone
-    grow_timezone_offset: int | None = None
-
-    # Template
-    template_id: int | None = None
 
     # Nested data
     most_recent_data_point: DeviceDataPoint | None = None
@@ -66,8 +72,6 @@ class Device:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Device:
         """Create a Device from API response data (DeviceViewDto or DeviceDetailsDto)."""
-        device_type = data.get("deviceType")
-
         # Parse nested mostRecentDataPoint if present
         most_recent = None
         if "mostRecentDataPoint" in data and data["mostRecentDataPoint"]:
@@ -79,23 +83,23 @@ class Device:
             light_preview = ProLightReadingPreview.from_dict(data["proLightReadingPreviewDto"])
 
         return cls(
-            id=data.get("id", 0),
-            name=data.get("name"),
-            device_type=str(device_type) if device_type is not None else None,
-            grow_id=data.get("growId"),
-            guid=data.get("guid"),
-            pulse_guid=data.get("pulseGuid"),
+            id=data["id"],
+            grow_id=data["growId"],
+            hidden=data["hidden"],
+            device_type=data["deviceType"],
+            guid=data["guid"],
+            pulse_guid=data["pulseGuid"],
+            is_day=data["isDay"],
+            vpd_leaf_temp_offset_in_f=data["vpdLeafTempOffsetInF"],
+            battery_count=data["batteryCount"],
+            low_battery_voltage=data["lowBatteryVoltage"],
+            grow_timezone_offset=data["growTimezoneOffset"],
             display_order=data.get("displayOrder", 0),
-            hidden=data.get("hidden", False),
+            name=data.get("name"),
+            template_id=data.get("templateId"),
+            vpd_target=data.get("vpdTarget"),
             day_start=data.get("dayStart"),
             night_start=data.get("nightStart"),
-            is_day=data.get("isDay"),
-            vpd_leaf_temp_offset_in_f=data.get("vpdLeafTempOffsetInF"),
-            vpd_target=data.get("vpdTarget"),
-            battery_count=data.get("batteryCount"),
-            low_battery_voltage=data.get("lowBatteryVoltage"),
-            grow_timezone_offset=data.get("growTimezoneOffset"),
-            template_id=data.get("templateId"),
             most_recent_data_point=most_recent,
             pro_light_reading_preview=light_preview,
         )
@@ -103,24 +107,27 @@ class Device:
 
 @dataclass
 class Sensor:
-    """Represents a sensor from universalSensorViews."""
+    """Represents a sensor (SensorDeviceViewUniversalDto).
 
+    Based on OpenAPI spec, required fields are:
+    id, growId, hidden, deviceType, sensorType, mostRecentDataPoint
+    """
+
+    # Required fields per OpenAPI spec
     id: int
-    name: str | None = None
-    sensor_type: str | None = None
-    device_type: str | None = None
-    hub_id: int | None = None
-    grow_id: int | None = None
-    display_order: int = 0
-    hidden: bool = False
+    grow_id: int
+    hidden: bool
+    device_type: int
+    sensor_type: int
 
-    # Schedule settings
+    # Optional fields per OpenAPI spec
+    display_order: int = 0
+    name: str | None = None
+    hub_id: int | None = None
+    template_id: int | None = None
     day_start: str | None = None
     night_start: str | None = None
-
-    # Sensor specific
     par_sensor_subtype: int | None = None
-    template_id: int | None = None
 
     # Nested data
     most_recent_data_point: SensorDataPoint | None = None
@@ -129,33 +136,24 @@ class Sensor:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Sensor:
         """Create a Sensor from universalSensorViews API response."""
-        # Extract sensor ID from nested mostRecentDataPoint
-        sensor_id = data.get("id", 0)
-        if "mostRecentDataPoint" in data and data["mostRecentDataPoint"]:
-            sensor_id = data["mostRecentDataPoint"].get("sensorId", sensor_id)
-
-        # Get sensor and device types
-        sensor_type = data.get("sensorType")
-        device_type = data.get("deviceType")
-
         # Parse nested mostRecentDataPoint if present
         most_recent = None
         if "mostRecentDataPoint" in data and data["mostRecentDataPoint"]:
             most_recent = SensorDataPoint.from_dict(data["mostRecentDataPoint"])
 
         return cls(
-            id=sensor_id,
-            name=data.get("name"),
-            sensor_type=str(sensor_type) if sensor_type is not None else None,
-            device_type=str(device_type) if device_type is not None else None,
-            hub_id=data.get("hubId"),
-            grow_id=data.get("growId"),
+            id=data["id"],
+            grow_id=data["growId"],
+            hidden=data["hidden"],
+            device_type=data["deviceType"],
+            sensor_type=data["sensorType"],
             display_order=data.get("displayOrder", 0),
-            hidden=data.get("hidden", False),
+            name=data.get("name"),
+            hub_id=data.get("hubId"),
+            template_id=data.get("templateId"),
             day_start=data.get("dayStart"),
             night_start=data.get("nightStart"),
             par_sensor_subtype=data.get("parSensorSubtype"),
-            template_id=data.get("templateId"),
             most_recent_data_point=most_recent,
             last_hour_data_point_dtos=data.get("lastHourDataPointDtos"),
         )
@@ -163,34 +161,33 @@ class Sensor:
 
 @dataclass
 class DeviceDataPoint:
-    """Represents a full device data point with all sensor readings."""
+    """Represents a device data point (PublicApiDataPoint).
 
+    Based on OpenAPI spec, required fields are:
+    deviceId, pluggedIn, signalStrength, createdAt, deviceType
+    """
+
+    # Required fields per OpenAPI spec
     device_id: int
-    device_type: str | None = None
-    created_at: datetime | None = None
+    plugged_in: bool
+    signal_strength: int
+    created_at: datetime
+    device_type: int
 
-    # Power and connectivity
-    plugged_in: bool | None = None
+    # Optional fields per OpenAPI spec (with sensible defaults)
     battery_v: float | None = None
-    signal_strength: int | None = None
-
-    # Environmental readings
     temperature_f: float | None = None
-    temperature_c: float | None = None
     humidity_rh: float | None = None
     light_lux: float | None = None
     air_pressure: float | None = None
     vpd: float | None = None
     dp_c: float | None = None
     dp_f: float | None = None
-
-    # Gas sensors
+    temperature_c: float | None = None
     co2: int | None = None
     co2_temperature: float | None = None
     co2_rh: float | None = None
     voc: int | None = None
-
-    # Light spectrum channels
     channel1: float | None = None
     channel2: float | None = None
     channel3: float | None = None
@@ -199,35 +196,36 @@ class DeviceDataPoint:
     channel6: float | None = None
     channel7: float | None = None
     channel8: float | None = None
-
-    # Additional light measurements
     near: float | None = None
     clear: float | None = None
-    flicker: int | None = None
+    flicker: float | None = None
     par: float | None = None
     gain: int | None = None
     tint: float | None = None
-    light_calculation_reading: float | None = None
+    light_calculation_reading: dict[str, Any] | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> DeviceDataPoint:
         """Create a DeviceDataPoint from API response data."""
-        device_type = data.get("deviceType")
+        created_at = _parse_datetime(data.get("createdAt"))
+        if created_at is None:
+            raise ValueError("createdAt is required for DeviceDataPoint")
+
         return cls(
-            device_id=data.get("deviceId", 0),
-            device_type=str(device_type) if device_type is not None else None,
-            created_at=_parse_datetime(data.get("createdAt")),
-            plugged_in=data.get("pluggedIn"),
+            device_id=data["deviceId"],
+            plugged_in=data["pluggedIn"],
+            signal_strength=data["signalStrength"],
+            created_at=created_at,
+            device_type=data["deviceType"],
             battery_v=data.get("batteryV"),
-            signal_strength=data.get("signalStrength"),
             temperature_f=data.get("temperatureF"),
-            temperature_c=data.get("temperatureC"),
             humidity_rh=data.get("humidityRh"),
             light_lux=data.get("lightLux"),
             air_pressure=data.get("airPressure"),
             vpd=data.get("vpd"),
             dp_c=data.get("dpC"),
             dp_f=data.get("dpF"),
+            temperature_c=data.get("temperatureC"),
             co2=data.get("co2"),
             co2_temperature=data.get("co2Temperature"),
             co2_rh=data.get("co2Rh"),
@@ -254,40 +252,42 @@ class DeviceDataPoint:
 class SensorDataPointValue:
     """Represents a single parameter value from a sensor reading."""
 
-    param_name: str | None = None
-    param_value: str | None = None
-    measuring_unit: str | None = None
+    param_name: str
+    param_value: str
+    measuring_unit: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SensorDataPointValue:
         """Create a SensorDataPointValue from API response data."""
         return cls(
-            param_name=data.get("ParamName"),
-            param_value=data.get("ParamValue"),
-            measuring_unit=data.get("MeasuringUnit"),
+            param_name=data["ParamName"],
+            param_value=data["ParamValue"],
+            measuring_unit=data.get("MeasuringUnit", ""),
         )
 
 
 @dataclass
 class SensorDataPoint:
-    """Represents a sensor data point (UniversalDataPointDto)."""
+    """Represents a sensor data point (UniversalDataPointDto).
+
+    Based on OpenAPI spec, required fields are: sensorId, createdAt
+    """
 
     sensor_id: int
-    created_at: datetime | None = None
-    data_point_values: list[SensorDataPointValue] | None = None
-
-    def __post_init__(self) -> None:
-        """Initialize default list if None."""
-        if self.data_point_values is None:
-            self.data_point_values = []
+    created_at: datetime
+    data_point_values: list[SensorDataPointValue] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SensorDataPoint:
         """Create a SensorDataPoint from API response data."""
+        created_at = _parse_datetime(data.get("createdAt"))
+        if created_at is None:
+            raise ValueError("createdAt is required for SensorDataPoint")
+
         values = [SensorDataPointValue.from_dict(v) for v in data.get("dataPointValues", [])]
         return cls(
-            sensor_id=data.get("sensorId", 0),
-            created_at=_parse_datetime(data.get("createdAt")),
+            sensor_id=data["sensorId"],
+            created_at=created_at,
             data_point_values=values,
         )
 
@@ -310,77 +310,167 @@ class DeviceData:
 
 @dataclass
 class SensorDetails:
-    """Detailed sensor information including thresholds."""
+    """Detailed sensor information (SensorDeviceDetailsDto).
 
+    Based on OpenAPI spec, required fields are:
+    id, sensorType, growId, hubId, hidden, dayStart, nightStart
+    """
+
+    # Required fields per OpenAPI spec
     id: int
+    sensor_type: int
+    grow_id: int
+    hub_id: int
+    hidden: bool
+    day_start: str
+    night_start: str
+
+    # Optional fields per OpenAPI spec
     name: str | None = None
-    sensor_type: str | None = None
-    device_id: int | None = None
-    unit: str | None = None
-    min_threshold: float | None = None
-    max_threshold: float | None = None
-    enabled: bool = True
+    hub_name: str | None = None
+    vpd_target: float | None = None
+    vpd_leaf_temperature_offset_in_f: float | None = None
+    orp_calibration_offset: int | None = None
+    sensor_template_id: int | None = None
+    sensor_template_name: str | None = None
+    offset_id: int | None = None
+    par_sensor_subtype: int | None = None
+
+    # Thresholds list
+    thresholds: list[dict[str, Any]] = field(default_factory=list)
+
+    # Calibration info (optional)
+    ph10_sensor_calibration_info: dict[str, Any] | None = None
+    ec1_sensor_calibration_info: dict[str, Any] | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SensorDetails:
         """Create SensorDetails from API response data."""
         return cls(
-            id=data.get("id", 0),
+            id=data["id"],
+            sensor_type=data["sensorType"],
+            grow_id=data["growId"],
+            hub_id=data["hubId"],
+            hidden=data["hidden"],
+            day_start=data["dayStart"],
+            night_start=data["nightStart"],
             name=data.get("name"),
-            sensor_type=data.get("sensorType"),
-            device_id=data.get("deviceId"),
-            unit=data.get("unit"),
-            min_threshold=data.get("minThreshold"),
-            max_threshold=data.get("maxThreshold"),
-            enabled=data.get("enabled", True),
+            hub_name=data.get("hubName"),
+            vpd_target=data.get("vpdTarget"),
+            vpd_leaf_temperature_offset_in_f=data.get("vpdLeafTemperatureOffsetinF"),
+            orp_calibration_offset=data.get("orpCalibrationOffSet"),
+            sensor_template_id=data.get("sensorTemplateId"),
+            sensor_template_name=data.get("sensorTemplateName"),
+            offset_id=data.get("offsetId"),
+            par_sensor_subtype=data.get("parSensorSubtype"),
+            thresholds=data.get("thresholds", []),
+            ph10_sensor_calibration_info=data.get("ph10SensorCalibrationInformationDto"),
+            ec1_sensor_calibration_info=data.get("ec1SensorCalibrationInformationDto"),
         )
 
 
 @dataclass
 class Hub:
-    """Represents a Pulsegrow hub from HubDetailsDto."""
+    """Represents a Pulsegrow hub (HubDetailsDto).
 
+    Based on OpenAPI spec, required fields are: id, growId, hidden
+    """
+
+    # Required fields per OpenAPI spec
     id: int
+    grow_id: int
+    hidden: bool
+
+    # Optional fields per OpenAPI spec
     name: str | None = None
-    grow_id: int | None = None
     mac_address: str | None = None
-    hidden: bool = False
-    hub_thresholds: list[dict[str, Any]] | None = None
-    sensor_devices: list[dict[str, Any]] | None = None
+
+    # Lists (may be empty)
+    hub_thresholds: list[dict[str, Any]] = field(default_factory=list)
+    sensor_devices: list[dict[str, Any]] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Hub:
         """Create a Hub from API response data."""
         return cls(
-            id=data.get("id", 0),
+            id=data["id"],
+            grow_id=data["growId"],
+            hidden=data["hidden"],
             name=data.get("name"),
-            grow_id=data.get("growId"),
             mac_address=data.get("macAddress"),
-            hidden=data.get("hidden", False),
-            hub_thresholds=data.get("hubThresholds"),
-            sensor_devices=data.get("sensorDevices"),
+            hub_thresholds=data.get("hubThresholds", []),
+            sensor_devices=data.get("sensorDevices", []),
         )
 
 
 @dataclass
 class LightReading:
-    """Light spectrum reading from Pro device."""
+    """Light spectrum reading from Pro device (ProLightReadingDto).
 
-    timestamp: datetime | None = None
-    par: float | None = None
-    ppfd: float | None = None
+    Based on OpenAPI spec, required fields are:
+    deviceId, id, createdAt, channel1-8, ir, clear, flicker, gain, tint, ppfd
+    """
+
+    # Required fields per OpenAPI spec
+    device_id: int
+    id: int
+    created_at: datetime
+    ppfd: float
+    channel1: float
+    channel2: float
+    channel3: float
+    channel4: float
+    channel5: float
+    channel6: float
+    channel7: float
+    channel8: float
+    ir: float
+    clear: float
+    flicker: float
+    gain: int
+    tint: float
+
+    # Optional fields per OpenAPI spec
+    note: str | None = None
     dli: float | None = None
-    spectrum: dict[str, float] | None = None
+    pfd_red: float | None = None
+    pfd_green: float | None = None
+    pfd_blue: float | None = None
+    pfd_ir: float | None = None
+    spectrum: list[float] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> LightReading:
         """Create a LightReading from API response data."""
+        created_at = _parse_datetime(data.get("createdAt"))
+        if created_at is None:
+            raise ValueError("createdAt is required for LightReading")
+
         return cls(
-            timestamp=_parse_datetime(data.get("timestamp")),
-            par=data.get("par"),
-            ppfd=data.get("ppfd"),
+            device_id=data["deviceId"],
+            id=data["id"],
+            created_at=created_at,
+            ppfd=data["ppfd"],
+            channel1=data["channel1"],
+            channel2=data["channel2"],
+            channel3=data["channel3"],
+            channel4=data["channel4"],
+            channel5=data["channel5"],
+            channel6=data["channel6"],
+            channel7=data["channel7"],
+            channel8=data["channel8"],
+            ir=data["ir"],
+            clear=data["clear"],
+            flicker=data["flicker"],
+            gain=data["gain"],
+            tint=data["tint"],
+            note=data.get("note"),
             dli=data.get("dli"),
-            spectrum=data.get("spectrum"),
+            pfd_red=data.get("pfdRed"),
+            pfd_green=data.get("pfdGreen"),
+            pfd_blue=data.get("pfdBlue"),
+            pfd_ir=data.get("pfdIr"),
+            spectrum=data.get("spectrum", []),
         )
 
 
@@ -388,108 +478,131 @@ class LightReading:
 class LightReadingsResponse:
     """Response containing multiple light readings."""
 
-    readings: list[LightReading]
-    page: int = 0
-    total_pages: int = 0
+    current_page: int
+    total_pages: int
+    light_readings: list[LightReading]
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> LightReadingsResponse:
         """Create LightReadingsResponse from API response data."""
-        readings_data = data.get("readings", [])
+        readings_data = data.get("lightReadings", [])
         return cls(
-            readings=[LightReading.from_dict(r) for r in readings_data],
-            page=data.get("page", 0),
-            total_pages=data.get("totalPages", 0),
+            current_page=data["currentPage"],
+            total_pages=data["totalPages"],
+            light_readings=[LightReading.from_dict(r) for r in readings_data],
         )
 
 
 @dataclass
 class TimelineEvent:
-    """Represents a timeline event from TimelineEventDto."""
+    """Represents a timeline event (TimelineEventDto).
 
-    id: int
-    timeline_event_type: int | None = None
-    title: str | None = None
-    detail: str | None = None
-    display: bool = True
-    grow_id: int | None = None
+    Based on OpenAPI spec, required fields are: timelineEventType, display
+    """
+
+    # Required fields per OpenAPI spec
+    timeline_event_type: int
+    display: bool
+
+    # Optional fields per OpenAPI spec
+    id: int = 0
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    title: str | None = None
+    detail: str | None = None
+    grow_id: int | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TimelineEvent:
         """Create a TimelineEvent from API response data."""
         return cls(
+            timeline_event_type=data["timelineEventType"],
+            display=data["display"],
             id=data.get("id", 0),
-            timeline_event_type=data.get("timelineEventType"),
-            title=data.get("title"),
-            detail=data.get("detail"),
-            display=data.get("display", True),
-            grow_id=data.get("growId"),
             created_at=_parse_datetime(data.get("createdAt")),
             updated_at=_parse_datetime(data.get("updatedAt")),
+            title=data.get("title"),
+            detail=data.get("detail"),
+            grow_id=data.get("growId"),
         )
 
 
 @dataclass
 class TriggeredThreshold:
-    """Represents a triggered threshold from SortedTriggeredThresholdsDto."""
+    """Represents a triggered threshold (ViewTriggeredThresholdDto).
 
-    id: int
-    device_id: int | None = None
+    Based on OpenAPI spec, required fields are:
+    createdAt, resolved, thresholdType, deviceId, lowOrHigh
+    """
+
+    # Required fields per OpenAPI spec
+    created_at: datetime
+    resolved: bool
+    threshold_type: int
+    device_id: int
+    low_or_high: bool
+
+    # Optional fields per OpenAPI spec
+    id: int = 0
+    resolved_at: datetime | None = None
+    threshold_id: int | None = None
     device_name: str | None = None
-    low_or_high: bool | None = None
     low_threshold_value: float | None = None
     high_threshold_value: float | None = None
     triggering_value: str | None = None
     sensor_threshold_type: int | None = None
     hub_threshold_type: int | None = None
-    threshold_id: int | None = None
-    threshold_type: int | None = None
-    resolved: bool = False
-    created_at: datetime | None = None
-    resolved_at: datetime | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TriggeredThreshold:
         """Create a TriggeredThreshold from API response data."""
+        created_at = _parse_datetime(data.get("createdAt"))
+        if created_at is None:
+            raise ValueError("createdAt is required for TriggeredThreshold")
+
         return cls(
+            created_at=created_at,
+            resolved=data["resolved"],
+            threshold_type=data["thresholdType"],
+            device_id=data["deviceId"],
+            low_or_high=data["lowOrHigh"],
             id=data.get("id", 0),
-            device_id=data.get("deviceId"),
+            resolved_at=_parse_datetime(data.get("resolvedAt")),
+            threshold_id=data.get("thresholdId"),
             device_name=data.get("deviceName"),
-            low_or_high=data.get("lowOrHigh"),
             low_threshold_value=data.get("lowThresholdValue"),
             high_threshold_value=data.get("highThresholdValue"),
             triggering_value=data.get("triggeringValue"),
             sensor_threshold_type=data.get("sensorThresholdType"),
             hub_threshold_type=data.get("hubThresholdType"),
-            threshold_id=data.get("thresholdId"),
-            threshold_type=data.get("thresholdType"),
-            resolved=data.get("resolved", False),
-            created_at=_parse_datetime(data.get("createdAt")),
-            resolved_at=_parse_datetime(data.get("resolvedAt")),
         )
 
 
 @dataclass
 class UserUsage:
-    """User information from UserUsageInformation."""
+    """User information (UserUsageInformation).
 
+    Based on OpenAPI spec, required fields are: userId
+    """
+
+    # Required fields per OpenAPI spec
     user_id: int
+
+    # Optional fields per OpenAPI spec
     user_email: str | None = None
     user_name: str | None = None
-    role: str | None = None
     last_active: datetime | None = None
+    role: str | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> UserUsage:
         """Create UserUsage from API response data."""
         return cls(
-            user_id=data.get("userId", 0),
+            user_id=data["userId"],
             user_email=data.get("userEmail"),
             user_name=data.get("userName"),
-            role=data.get("role"),
             last_active=_parse_datetime(data.get("lastActive")),
+            role=data.get("role"),
         )
 
 
@@ -506,7 +619,7 @@ class Invitation:
     def from_dict(cls, data: dict[str, Any]) -> Invitation:
         """Create Invitation from API response data."""
         return cls(
-            id=data.get("id", 0),
+            id=data["id"],
             email=data.get("email"),
             invited_at=_parse_datetime(data.get("invitedAt")),
             invited_by=data.get("invitedBy"),

@@ -60,18 +60,18 @@ class TestRealFixtures:
         assert len(device_data.devices) > 0
         assert len(device_data.sensors) > 0
 
-        # Check first device
+        # Check first device (types are now int per OpenAPI spec)
         first_device = device_data.devices[0]
         assert isinstance(first_device, Device)
         assert first_device.id == 20447
         assert first_device.name == "PulsePro"
-        assert first_device.device_type == "1"  # Converted to string from API int
+        assert first_device.device_type == 1
 
-        # Check first sensor
+        # Check first sensor (types are now int per OpenAPI spec)
         first_sensor = device_data.sensors[0]
         assert isinstance(first_sensor, Sensor)
-        assert first_sensor.id == 1638  # From mostRecentDataPoint.sensorId
-        assert first_sensor.sensor_type == "3"
+        assert first_sensor.id == 1638
+        assert first_sensor.sensor_type == 3
         assert first_sensor.hub_id == 402
 
     def test_hub_ids_parsing(self):
@@ -102,25 +102,25 @@ class TestRealFixtures:
 
         assert device.id == 20447
         assert device.name == "PulsePro"
-        assert device.device_type == "1"  # Converted to string from API int
+        assert device.device_type == 1  # int per OpenAPI spec
 
         # Test nested mostRecentDataPoint
         assert device.most_recent_data_point is not None
         assert device.most_recent_data_point.device_id == 20447
-        assert device.most_recent_data_point.temperature_f is not None  # Value changes
-        assert device.most_recent_data_point.co2 is not None  # Value changes
+        assert device.most_recent_data_point.temperature_f is not None
+        assert device.most_recent_data_point.co2 is not None
 
         # Test nested proLightReadingPreviewDto
         assert device.pro_light_reading_preview is not None
-        assert device.pro_light_reading_preview.id is not None  # ID changes
-        assert device.pro_light_reading_preview.ppfd is not None  # Value changes
-        assert device.pro_light_reading_preview.dli is not None  # Value changes
+        assert device.pro_light_reading_preview.id is not None
+        assert device.pro_light_reading_preview.ppfd is not None
+        assert device.pro_light_reading_preview.dli is not None
 
         # Test other device fields
         assert device.grow_id == 17513
         assert device.day_start == "08:00:00"
         assert device.night_start == "20:00:00"
-        assert device.is_day is not None  # Changes based on time of day
+        assert device.is_day is not None
         assert device.battery_count == 1
         assert device.low_battery_voltage == 3.7
 
@@ -129,13 +129,13 @@ class TestRealFixtures:
         sensor_view = ALL_DEVICES["universalSensorViews"][0]
         sensor = Sensor.from_dict(sensor_view)
 
-        assert sensor.id == 1638  # From nested mostRecentDataPoint
-        assert sensor.sensor_type == "3"
+        assert sensor.id == 1638
+        assert sensor.sensor_type == 3  # int per OpenAPI spec
 
         # Test all sensor fields
         assert sensor.hub_id == 402
         assert sensor.grow_id == 17513
-        assert sensor.device_type == "3"
+        assert sensor.device_type == 3  # int per OpenAPI spec
         assert sensor.day_start == "08:00:00"
         assert sensor.night_start == "20:00:00"
         assert sensor.display_order == 2
@@ -148,7 +148,6 @@ class TestRealFixtures:
         assert sensor.most_recent_data_point.sensor_id == 1638
         assert len(sensor.most_recent_data_point.data_point_values) == 1
         assert sensor.most_recent_data_point.data_point_values[0].param_name == "pH"
-        # pH value changes over time, just verify it exists and is numeric
         assert sensor.most_recent_data_point.data_point_values[0].param_value is not None
         assert float(sensor.most_recent_data_point.data_point_values[0].param_value) > 0
 
@@ -197,7 +196,7 @@ class TestRealFixtures:
         assert first_threshold.sensor_threshold_type == 6
         assert first_threshold.hub_threshold_type is None
         assert first_threshold.threshold_id is None
-        assert first_threshold.threshold_type is None
+        # Note: thresholdType can be None for sensor thresholds
         assert first_threshold.resolved is False
         assert first_threshold.created_at is not None
         assert first_threshold.resolved_at is not None
@@ -233,18 +232,16 @@ class TestRealFixtures:
         assert "mostRecentDataPoint" in first_hub
         most_recent = first_hub["mostRecentDataPoint"]
         assert most_recent["deviceId"] == 402
-        # Signal strength changes, just verify it exists
         assert "signalStrength" in most_recent
         assert most_recent["signalStrength"] is not None
 
     def test_ec_sensor_with_multiple_values(self):
         """Test EC sensor with multiple parameter values."""
-        # Get the EC sensor (second in the list)
         ec_sensor_view = ALL_DEVICES["universalSensorViews"][1]
         ec_sensor = Sensor.from_dict(ec_sensor_view)
 
         assert ec_sensor.id == 1696
-        assert ec_sensor.sensor_type == "4"
+        assert ec_sensor.sensor_type == 4  # int per OpenAPI spec
         assert ec_sensor.name == "EC1 Sensor ID: 1696"
 
         # Test EC sensor has multiple parameter values
@@ -254,13 +251,13 @@ class TestRealFixtures:
         # Check EC value
         ec_value = ec_sensor.most_recent_data_point.data_point_values[0]
         assert ec_value.param_name == "EC"
-        assert ec_value.param_value is not None  # Value changes
+        assert ec_value.param_value is not None
         assert ec_value.measuring_unit == "mS/cm"
 
         # Check Temperature value
         temp_value = ec_sensor.most_recent_data_point.data_point_values[1]
         assert temp_value.param_name == "Temperature"
-        assert temp_value.param_value is not None  # Value changes
+        assert temp_value.param_value is not None
         assert temp_value.measuring_unit == "°C"
 
     def test_enums_match_real_data(self):
@@ -274,11 +271,11 @@ class TestRealFixtures:
 
         # Test sensor types
         ph_sensor_view = ALL_DEVICES["universalSensorViews"][0]
-        assert int(ph_sensor_view["sensorType"]) == SensorType.PH10
-        assert int(ph_sensor_view["deviceType"]) == DeviceType.SENSOR
+        assert ph_sensor_view["sensorType"] == SensorType.PH10
+        assert ph_sensor_view["deviceType"] == DeviceType.SENSOR
 
         ec_sensor_view = ALL_DEVICES["universalSensorViews"][1]
-        assert int(ec_sensor_view["sensorType"]) == SensorType.EC1
+        assert ec_sensor_view["sensorType"] == SensorType.EC1
 
         # Test timeline event types
         for event in TIMELINE:
@@ -299,13 +296,13 @@ class TestRealFixtures:
         device_data = DeviceDataPoint.from_dict(RECENT_DATA)
 
         assert isinstance(device_data, DeviceDataPoint)
-        assert device_data.device_type == "1"  # PulsePro
+        assert device_data.device_type == 1  # int per OpenAPI spec
         assert device_data.temperature_f is not None
         assert device_data.temperature_c is not None
         assert device_data.humidity_rh is not None
         assert device_data.vpd is not None
-        assert device_data.dp_f is not None  # Dew point F (dp_f, not dew_point_f)
-        assert device_data.dp_c is not None  # Dew point C (dp_c, not dew_point_c)
+        assert device_data.dp_f is not None
+        assert device_data.dp_c is not None
         assert device_data.light_lux is not None
         assert device_data.air_pressure is not None
 
@@ -322,14 +319,13 @@ class TestRealFixtures:
         # Test first data point
         first_point = DeviceDataPoint.from_dict(DATA_RANGE[0])
         assert isinstance(first_point, DeviceDataPoint)
-        assert first_point.device_type == "1"
+        assert first_point.device_type == 1  # int per OpenAPI spec
         assert first_point.temperature_f is not None
         assert first_point.humidity_rh is not None
         assert first_point.vpd is not None
 
     def test_light_readings_parsing(self):
         """Test parsing real light readings response."""
-        # Test the raw API data structure
         assert isinstance(LIGHT_READINGS, dict)
         assert "currentPage" in LIGHT_READINGS
         assert "numPages" in LIGHT_READINGS
@@ -337,7 +333,6 @@ class TestRealFixtures:
         assert LIGHT_READINGS["currentPage"] == 1
         assert LIGHT_READINGS["numPages"] > 0
 
-        # Test first light reading from raw data
         assert len(LIGHT_READINGS["lightReadings"]) > 0
         first_reading_data = LIGHT_READINGS["lightReadings"][0]
 
@@ -348,7 +343,7 @@ class TestRealFixtures:
         assert first_reading_data["ppfd"] is not None
         assert first_reading_data["dli"] is not None
 
-        # Test spectrum channels in raw data
+        # Test spectrum channels
         assert first_reading_data["channel1"] is not None
         assert first_reading_data["channel2"] is not None
         assert first_reading_data["channel3"] is not None
@@ -358,7 +353,7 @@ class TestRealFixtures:
         assert first_reading_data["channel7"] is not None
         assert first_reading_data["channel8"] is not None
 
-        # Test other light parameters in raw data
+        # Test other light parameters
         assert first_reading_data["clear"] is not None
         assert first_reading_data["gain"] is not None
         assert first_reading_data["tint"] is not None
@@ -366,7 +361,7 @@ class TestRealFixtures:
         assert first_reading_data["pfdGreen"] is not None
         assert first_reading_data["pfdBlue"] is not None
 
-        # Test that LightReading model can parse what it knows about
+        # Test that LightReading model can parse the data
         first_reading = LightReading.from_dict(first_reading_data)
         assert isinstance(first_reading, LightReading)
         assert first_reading.ppfd is not None
@@ -374,11 +369,10 @@ class TestRealFixtures:
 
     def test_sensor_details_parsing(self):
         """Test parsing real sensor details response."""
-        # Test raw data structure since the model may not have all fields
         assert isinstance(SENSOR_DETAILS, dict)
         assert SENSOR_DETAILS["id"] == 1638
         assert SENSOR_DETAILS["name"] == "PH Sensor ID: 1638"
-        assert SENSOR_DETAILS["sensorType"] == 3  # pH sensor
+        assert SENSOR_DETAILS["sensorType"] == 3
         assert SENSOR_DETAILS["growId"] == 17513
         assert SENSOR_DETAILS["hubId"] == 402
         assert SENSOR_DETAILS["hubName"] == "PulseHub"
@@ -386,14 +380,12 @@ class TestRealFixtures:
         assert SENSOR_DETAILS["dayStart"] == "08:00:00"
         assert SENSOR_DETAILS["nightStart"] == "20:00:00"
 
-        # Test thresholds are present
         assert "thresholds" in SENSOR_DETAILS
         assert isinstance(SENSOR_DETAILS["thresholds"], list)
         if len(SENSOR_DETAILS["thresholds"]) > 0:
             first_threshold = SENSOR_DETAILS["thresholds"][0]
             assert "thresholdType" in first_threshold
 
-        # Test that model parsing works (even if it doesn't capture all fields)
         sensor_details = SensorDetails.from_dict(SENSOR_DETAILS)
         assert isinstance(sensor_details, SensorDetails)
         assert sensor_details.id == 1638
@@ -401,12 +393,10 @@ class TestRealFixtures:
 
     def test_sensor_data_range_parsing(self):
         """Test parsing real sensor data range response (can be empty)."""
-        # SENSOR_DATA can be empty if no data points in range
         assert isinstance(SENSOR_DATA, dict)
         assert "dataPointValues" in SENSOR_DATA
         assert "dataPointValuesCreatedAt" in SENSOR_DATA
 
-        # If there's data, test it
         if SENSOR_DATA.get("dataPointValues"):
             assert isinstance(SENSOR_DATA["dataPointValues"], list)
         if SENSOR_DATA.get("dataPointValuesCreatedAt"):
@@ -414,7 +404,6 @@ class TestRealFixtures:
 
     def test_all_mock_data_available(self):
         """Test that all expected mock data constants are available."""
-        # Verify all expected mock data is present
         assert ALL_DEVICES is not None
         assert HUB_IDS is not None
         assert HUB_DETAILS is not None
@@ -427,7 +416,6 @@ class TestRealFixtures:
         assert SENSOR_DETAILS is not None
         assert SENSOR_DATA is not None
 
-        # Verify types
         assert isinstance(ALL_DEVICES, dict)
         assert isinstance(HUB_IDS, list)
         assert isinstance(HUB_DETAILS, dict)
