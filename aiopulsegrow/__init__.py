@@ -35,7 +35,7 @@ from .models import (
     UserUsage,
 )
 
-__version__ = "25.12.5"
+__version__ = "25.12.6"
 
 __all__ = [
     # Client
